@@ -14,8 +14,21 @@ from pg_ggn import GGN
 from pg_rgcn import PRGCN
 from pg_gat import PGAT
 from pg_rgcn_gat import PRGAT
+from pg_chebyshev import PCheby
+from pg_sage import PSAGE
+from pg_graph_conv import PGraphConv
+from pg_dense_graph import PDenseGraph
+from pg_dense_gcn import PDenseGCN
+from pg_dense_sage import PDenseSAGE
+from pg_feast import PFeaSt
+from pg_tag import PTAG
+from pg_sg import PSG
+from pg_signed import PSigned
+from pg_arma import PARMA
 from socnav import SocNavDataset
 from torch.utils.data import DataLoader
+
+
 # from sklearn.metrics import f1_score
 # from sklearn.metrics import r2_score
 from sklearn.metrics import mean_absolute_error
@@ -172,7 +185,8 @@ def main(training_file, dev_file, test_file, epochs=None, patience=None, num_hea
     print('BATCH SIZE', batch_size_ch)
     # net type
     if net is None:
-        net_ch = [ GCN, GAT, RGCN, PGCN, PRGCN, GGN, PGAT ]
+        net_ch = [ GCN, GAT, RGCN, PGCN, GGN, PRGCN, PGAT, PRGAT, PCheby, PSAGE, 
+        PGraphConv, PFeaSt, PTAG, PSG, PARMA  ]#PSigned
     else:
         net_ch_raw = flattenList(net)
         net_ch = []
@@ -187,6 +201,18 @@ def main(training_file, dev_file, test_file, epochs=None, patience=None, num_hea
                     net_ch.append(GAT)
                 else:
                     net_ch.append(PGAT)
+            elif ch.lower() == 'cheb':
+                net_ch.append(PCheby)
+            elif ch.lower() == 'arma':
+                net_ch.append(PARMA)
+            elif ch.lower() == 'cheb':
+                net_ch.append(PCheby)
+            elif ch.lower() == 'sage':
+                net_ch.append(PSAGE)
+            elif ch.lower() == 'graph_conv':
+                net_ch.append(PGraphConv)
+            elif ch.lower() == 'agnn':
+                net_ch.append(PAGNNConv)
             elif ch.lower() == 'rgcn':
                 if fw == 'dgl':
                     net_ch.append(RGCN)
@@ -229,12 +255,29 @@ def main(training_file, dev_file, test_file, epochs=None, patience=None, num_hea
     print('DEVICE', device)
     if fw is None:
         fw = ['dgl', 'pg']
+    improved_ch = [True, False]
+    normalize_ch = [True, False]
+    concat_ch = [True, False]
+    K_Cheby_ch = [2,3,5]
+    normalization_ch = ['sym','rw']
+    aggr_ch = ['add', 'mean', 'max']
+    negative_slope_ch=[0.1, 0.2, 0.3]
+    dropout_prob_ch = [0,0.1,0.01,0.001]
+    K_Tag_ch = [2,3,4,5]
+    K_SG_ch = [1,2,3,4,5]
+    num_stacks_ch = [1,2,4]
+    num_layers_ch = [1,2,4]
+    shared_weights_ch = [True, False]
+    first_aggr_ch = [True, False]
+    heads_ch = [1,2,4]
+    
+
 
     # define loss function
     # loss_fcn = torch.nn.BCEWithLogitsLoss()
     loss_fcn = torch.nn.MSELoss()
 
-    for trial in range(10):
+    for trial in range(200):
         trial_s = str(trial).zfill(6)
         num_heads     = random.choice(num_heads_ch)
         num_out_heads = random.choice(num_out_heads_ch)
@@ -251,6 +294,22 @@ def main(training_file, dev_file, test_file, epochs=None, patience=None, num_hea
         net_class     = random.choice(net_ch)
         freeze        = random.choice(freeze_ch)
         fw            = random.choice(fw)
+        improved= random.choice(improved_ch)
+        normalize= random.choice(normalize_ch)               
+        concat= random.choice(concat_ch)              
+        K_Cheby= random.choice(K_Cheby_ch)             
+        normalization= random.choice(normalization_ch)               
+        aggr= random.choice(aggr_ch)            
+        negative_slope= random.choice(negative_slope_ch)              
+        dropout_prob= random.choice(dropout_prob_ch)            
+        K_Tag= random.choice(K_Tag_ch)               
+        K_SG= random.choice(K_SG_ch)            
+        num_stacks= random.choice(num_stacks_ch)              
+        num_layers= random.choice(num_layers_ch)              
+        shared_weights= random.choice(shared_weights_ch)              
+        first_aggr= random.choice(first_aggr_ch)              
+        heads= random.choice(heads_ch)               
+
         if freeze == False:
             freeze = 0
         else:
@@ -387,13 +446,116 @@ def main(training_file, dev_file, test_file, epochs=None, patience=None, num_hea
                                 alpha,
                                 bias=True
                                 )
+                elif net_class in [PCheby]: 
+                    model = PCheby(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                K=K_Cheby,
+                                bias=True)
+                elif net_class in [PSAGE]:
+                    model = PSAGE(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                normalize=normalize,
+                                concat = concat,
+                                bias=True)
+                elif net_class in [PGraphConv]:
+                    model = PGraphConv(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                aggr=aggr,
+                                bias=True)
+                elif net_class in [PTAG]:
+                    model = PTAG(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                K=K_Tag,
+                                bias=True)
+                elif net_class in [PARMA]:
+                    model = PARMA(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                num_stacks=num_stacks, 
+                                num_layers=num_layers, 
+                                shared_weights=shared_weights, 
+                                bias=True)
+                elif net_class in [PSG]:
+                    model = PSG(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                K=K_SG,
+                                bias=True)
+                elif net_class in [PSigned]:
+                    model = PSigned(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                first_aggr=first_aggr,
+                                bias=True)
+                elif net_class in [PFeaSt]:
+                    model = PFeaSt(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                heads=heads,
+                                bias=True)
+                elif net_class in [PDenseGCN]:
+                    model = PDenseGCN(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                improved=improved,
+                                bias=True)
+                elif net_class in [PDenseSAGE]:
+                    model = PDenseSAGE(num_features=num_feats,
+                                n_classes=n_classes,
+                                num_hidden=num_hidden,
+                                num_hidden_layers=num_layers,
+                                dropout=in_drop,
+                                activation=F.relu,
+                                normalize=normalize,
+                                bias=True)
+                # elif net_class in [PDenseGraph]:
+                #     model = PDenseGraph(num_features=num_feats,
+                #                 n_classes=n_classes,
+                #                 num_hidden=num_hidden,
+                #                 num_hidden_layers=num_layers,
+                #                 dropout=in_drop,
+                #                 activation=F.relu,
+                #                 aggr=aggr,
+                #                 bias=True)
                 else:
                     model = GGN(num_feats,
                                 num_layers,
                                 aggr='mean',
                                 bias=True)
+                
         #Describe the model
-        #describe_model(model)
+        # describe_model(model)
 
         # define the optimizer
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -482,7 +644,7 @@ def main(training_file, dev_file, test_file, epochs=None, patience=None, num_hea
             test_score_list.append(evaluate(feats, model, subgraph, labels.float(), loss_fcn, fw, net_class)[0])
         print("F1-Score: {:.4f}".format(np.array(test_score_list).mean()))
         model.eval()
-        return best_loss
+    return best_loss
 
 
 if __name__ == '__main__':
@@ -500,9 +662,15 @@ if __name__ == '__main__':
         #      net='gat',
         #      cuda=False)
         #main('socnav_training_small.json', 'socnav_dev_small.json', 'socnav_test_small.json',
+        conv_methods = ['GCNConv', 'ChebConv', 'SAGEConv', 'GraphConv', 'GATConv',
+         'TAGConv', 'ARMAConv', 'SGConv', 'RGCNConv', 'SignedConv', 'GMMConv', 
+         'SplineConv', 'NNConv', 'XConv', 'FeaStConv', 'HypergraphConv']#, 'DenseGCNConv', 
+         #'DenseSAGEConv']#, 'DenseGraphConv']
+
+        conv_params = []
         main('socnav_training_small.json', 'socnav_dev_small.json', 'socnav_test_small.json',
            graph_type='relational',
-           net='gat',
+           net=None,
            epochs=10,
            patience=11,
            batch_size= [ 699 ],
