@@ -1,161 +1,210 @@
-# SNGNN
+## Adding various graph convolutional layers in origin SNGNN
+This repo serves as the task needed to be completed as part of GSOC proposal for RoboComp for the project 'Efficient acceptable social behaviour using machine learning techniques'
 
-SNGNN: A graph neural network for social navigation conventions
-
-__A brief description of the motivations and some results (including several videos) can be found in [https://ljmanso.com/sngnn](https://ljmanso.com/sngnn).__
-
-[![VIDEO](https://raw.githubusercontent.com/robocomp/sngnn/master/video.png)](https://www.youtube.com/embed/QVvuywgomTE "Everything Is AWESOME")
-
-## Introduction
-
-The document describes how to use SNGNN, a graph neural network trained to estimate the compliance of social navigation scenarios.
-
-
-## Software requirements
-1. PyTorch [https://pytorch.org/get-started/locally/](https://pytorch.org/get-started/locally/)
-2. Dgl [https://www.dgl.ai/pages/start.html](https://www.dgl.ai/pages/start.html)
-3. Rdflib (`pip install rdflib`)
-4. PyTorch Geometric [https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html](https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html)
-
-
-## Integrating the network in your projects
-
-Support is provided only for Python, as pytorch-geometric only supports Python.
-
-
-### Python
-
-
-
-
-1. Import the model and some dependencies
-
-```python
-import model_filename
-from torch_geometric.data import Data
-from torch.utils.data import DataLoader
-import dgl
-import feature_extractor_filename
-import numpy as np
+The changes made are as follows : 
+ - Added basic implementation for layers - [ ChebyConv, SAGEConv, GraphConv, FeaStConv, TAGConv, SGConv, ARMAConv ]
+ - Ran a random search for the layers (as already implemented in train.py )
+ 
+## Results
 ```
-
-
-2. Load the parameters that were used to train the model
-```python
-params = pickle.load('SNGNN_PARAMETERS.prms', 'rb'))
-```
-
-
-
-
-
-3. Load the models state dict
-
-```python
-NNmodel = model_filename.ModelName(params)
-NNmodel.load_state_dict(torch.load('SNGNN_MODEL.tch', map_location='cpu'))
-NNmodel.eval()
-```
-
-
-4. Use a dataset loader
-
-This is a helpful link. [https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#dataset-class](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html#dataset-class)
-
-Here socnav is the dataset class file
-```python
-    device = torch.device("cpu")
-    train_dataset = socnav.SocNavDataset(jsonmodel, mode='train', alt=graph_type)
-    train_dataloader = DataLoader(train_dataset, batch_size=1, collate_fn=collate)
-```
-
-
-5. Get the data and convert it to the data structure the framework needs
-```python
-for batch, data in enumerate(train_dataloader):
-    subgraph, feats, labels = data
-    feats = feats.to(device)
-    data = Data(x=feats.float(), edge_index=torch.stack(subgraph.edges()).to(device), edge_type=subgraph.edata['rel_type'].squeeze().to(device))
-```
-
-
-
-
-6. Pass the data to the model obtain the logits. Obtain score after modifying the logits
-
-```python
-logits = self.NNmodel(data)[0].detach().numpy()[0]
-score = logits*100
-```
-
-
-
-
-#### Python user API
-
-
-
-
-```python
-class SNGNN():
-	def predict(self, sn_scenario):
-      '''
-      This function takes an instance of Scenario and returns the score
-      '''
-    	    return score
-
-class Human():
-	def __init__(self, id, xPos, yPos, angle):
-    	    self.id = id
-    	    self.xPos = xPos
-     	    self.yPos = yPos
-    	    self.angle = angle
-
-class Object():
-	def __init__(self, id, xPos, yPos, angle):
-    	    self.id = id
-    	    self.xPos = xPos
-    	    self.yPos = yPos
-    	    self.angle = angle
-
-
-class SNScenario():
-	def __init__(self):
-    	    self.room = None
-    	    self.humans = []
-    	    self.objects = []
-    	    self.interactions = []
-	def add_room(self, sn_room):
-    	    self.room  = sn_room
-	def add_human(self, sn_human):
-          self.humans.append(sn_human)
-	def add_object(self, sn_object):
-    	    self.objects.append(sn_object)
-	def add_interaction(self, sn_interactions):
-    	    self.interactions.append(sn_interactions)
-```
-
-
-### Tutorial of how to use the API:
-```python
-from sndgAPI import *
-'''
-Usage of this API
-Add room using a dictionary of the x and y coordinates starting with index 0.
-Add humans with instance of Human class(id,x-coordinate,y-coordinate,orientation).
-Add objects with instance of Object class(id,x-coordinate,y-coordinate,orientation).
-Add interactions with a list of source_index and destination_index as [src_index,dst_index].
-Pass scenario to sngnn and then call predict method and you will obtain the score.
-Assumptions:
-We only allow valid interactions which include Human-Human Interaction and Human-Object Interaction.
-The coordinate system is relative with respect to the position of the robot which is (0,0).
-'''
-
-sn = SNScenario()
-sn.add_room({'x0':100,'y0':100,'x1':-100,'y1':100,'x2':-100,'y2':-100,'x3':100,'y3':-100})
-sn.add_human(Human(1,0,0,10))
-sn.add_object(Object(2,0,10,10))
-sn.add_interaction([1,2])
-sngnn = SNGNN()
-print(sngnn.predict(sn))
+{'TRIAL' : 000000, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1799} ,
+{'TRIAL' : 000001, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1455} ,
+{'TRIAL' : 000002, 'ARCHITECTURE' : '<class 'pg_ggn.GGN'>', 'F1-Score': 0.3200} ,
+{'TRIAL' : 000003, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3862} ,
+{'TRIAL' : 000004, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.0918} ,
+{'TRIAL' : 000005, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1124} ,
+{'TRIAL' : 000006, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 0.1598} ,
+{'TRIAL' : 000007, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.3837} ,
+{'TRIAL' : 000008, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1062} ,
+{'TRIAL' : 000009, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1046} ,
+{'TRIAL' : 000010, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.4125} ,
+{'TRIAL' : 000011, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.1115} ,
+{'TRIAL' : 000012, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.0897} ,
+{'TRIAL' : 000013, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1309} ,
+{'TRIAL' : 000014, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1157} ,
+{'TRIAL' : 000015, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.2189} ,
+{'TRIAL' : 000016, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.2388} ,
+{'TRIAL' : 000017, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.0932} ,
+{'TRIAL' : 000018, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000019, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000020, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1005} ,
+{'TRIAL' : 000021, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.0887} ,
+{'TRIAL' : 000022, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.0926} ,
+{'TRIAL' : 000023, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.2565} ,
+{'TRIAL' : 000024, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3691} ,
+{'TRIAL' : 000025, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1552} ,
+{'TRIAL' : 000026, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.4034} ,
+{'TRIAL' : 000027, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1211} ,
+{'TRIAL' : 000028, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1074} ,
+{'TRIAL' : 000029, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000030, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1880} ,
+{'TRIAL' : 000031, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3662} ,
+{'TRIAL' : 000032, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2258} ,
+{'TRIAL' : 000033, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.1131} ,
+{'TRIAL' : 000034, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.0936} ,
+{'TRIAL' : 000035, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000036, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.2911} ,
+{'TRIAL' : 000037, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3887} ,
+{'TRIAL' : 000038, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2286} ,
+{'TRIAL' : 000039, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3936} ,
+{'TRIAL' : 000040, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.0819} ,
+{'TRIAL' : 000041, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3101} ,
+{'TRIAL' : 000042, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000043, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000044, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.1686} ,
+{'TRIAL' : 000045, 'ARCHITECTURE' : '<class 'pg_ggn.GGN'>', 'F1-Score': 0.2842} ,
+{'TRIAL' : 000046, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3477} ,
+{'TRIAL' : 000047, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1612} ,
+{'TRIAL' : 000048, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1216} ,
+{'TRIAL' : 000049, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000050, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.2184} ,
+{'TRIAL' : 000051, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1193} ,
+{'TRIAL' : 000052, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1122} ,
+{'TRIAL' : 000053, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0850} ,
+{'TRIAL' : 000054, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1095} ,
+{'TRIAL' : 000055, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1176} ,
+{'TRIAL' : 000056, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3762} ,
+{'TRIAL' : 000057, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.0976} ,
+{'TRIAL' : 000058, 'ARCHITECTURE' : '<class 'pg_ggn.GGN'>', 'F1-Score': 0.3508} ,
+{'TRIAL' : 000059, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 0.1598} ,
+{'TRIAL' : 000060, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1974} ,
+{'TRIAL' : 000061, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.1887} ,
+{'TRIAL' : 000062, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.2912} ,
+{'TRIAL' : 000063, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0595} ,
+{'TRIAL' : 000064, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.1542} ,
+{'TRIAL' : 000065, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3881} ,
+{'TRIAL' : 000066, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.4250} ,
+{'TRIAL' : 000067, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000068, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0720} ,
+{'TRIAL' : 000069, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1063} ,
+{'TRIAL' : 000070, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3521} ,
+{'TRIAL' : 000071, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3504} ,
+{'TRIAL' : 000072, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.2920} ,
+{'TRIAL' : 000073, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3954} ,
+{'TRIAL' : 000074, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.0998} ,
+{'TRIAL' : 000075, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3193} ,
+{'TRIAL' : 000076, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2946} ,
+{'TRIAL' : 000077, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.0829} ,
+{'TRIAL' : 000078, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1045} ,
+{'TRIAL' : 000079, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 0.1598} ,
+{'TRIAL' : 000080, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.2359} ,
+{'TRIAL' : 000081, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3004} ,
+{'TRIAL' : 000082, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.2422} ,
+{'TRIAL' : 000083, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3269} ,
+{'TRIAL' : 000084, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.2061} ,
+{'TRIAL' : 000085, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.2011} ,
+{'TRIAL' : 000086, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3439} ,
+{'TRIAL' : 000087, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3343} ,
+{'TRIAL' : 000088, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.4200} ,
+{'TRIAL' : 000089, 'ARCHITECTURE' : '<class 'pg_ggn.GGN'>', 'F1-Score': 0.3877} ,
+{'TRIAL' : 000090, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1092} ,
+{'TRIAL' : 000091, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.2509} ,
+{'TRIAL' : 000092, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.3269} ,
+{'TRIAL' : 000093, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3128} ,
+{'TRIAL' : 000094, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3274} ,
+{'TRIAL' : 000095, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000096, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3978} ,
+{'TRIAL' : 000097, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.4078} ,
+{'TRIAL' : 000098, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.0672} ,
+{'TRIAL' : 000099, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3759} ,
+{'TRIAL' : 000100, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0632} ,
+{'TRIAL' : 000101, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.2064} ,
+{'TRIAL' : 000102, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2323} ,
+{'TRIAL' : 000103, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2530} ,
+{'TRIAL' : 000104, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.1070} ,
+{'TRIAL' : 000105, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.0770} ,
+{'TRIAL' : 000106, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1150} ,
+{'TRIAL' : 000107, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.0936} ,
+{'TRIAL' : 000108, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2122} ,
+{'TRIAL' : 000109, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.4284} ,
+{'TRIAL' : 000110, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.0964} ,
+{'TRIAL' : 000111, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.3098} ,
+{'TRIAL' : 000112, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.2969} ,
+{'TRIAL' : 000113, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3130} ,
+{'TRIAL' : 000114, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.0827} ,
+{'TRIAL' : 000115, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.1768} ,
+{'TRIAL' : 000116, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.0660} ,
+{'TRIAL' : 000117, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.0993} ,
+{'TRIAL' : 000118, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.3867} ,
+{'TRIAL' : 000119, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.1926} ,
+{'TRIAL' : 000120, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3668} ,
+{'TRIAL' : 000121, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.3145} ,
+{'TRIAL' : 000122, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1174} ,
+{'TRIAL' : 000123, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1041} ,
+{'TRIAL' : 000124, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.2764} ,
+{'TRIAL' : 000125, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1072} ,
+{'TRIAL' : 000126, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.1084} ,
+{'TRIAL' : 000127, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3244} ,
+{'TRIAL' : 000128, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0840} ,
+{'TRIAL' : 000129, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.0845} ,
+{'TRIAL' : 000130, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.1055} ,
+{'TRIAL' : 000131, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000132, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1343} ,
+{'TRIAL' : 000133, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000134, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3313} ,
+{'TRIAL' : 000135, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.0744} ,
+{'TRIAL' : 000136, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3035} ,
+{'TRIAL' : 000137, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.4405} ,
+{'TRIAL' : 000138, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000139, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1214} ,
+{'TRIAL' : 000140, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000141, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.0883} ,
+{'TRIAL' : 000142, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.2081} ,
+{'TRIAL' : 000143, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000144, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.2913} ,
+{'TRIAL' : 000145, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.0878} ,
+{'TRIAL' : 000146, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.1298} ,
+{'TRIAL' : 000147, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3475} ,
+{'TRIAL' : 000148, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1111} ,
+{'TRIAL' : 000149, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3214} ,
+{'TRIAL' : 000150, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.0741} ,
+{'TRIAL' : 000151, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.2916} ,
+{'TRIAL' : 000152, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 0.2193} ,
+{'TRIAL' : 000153, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000154, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.1563} ,
+{'TRIAL' : 000155, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.2479} ,
+{'TRIAL' : 000156, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3298} ,
+{'TRIAL' : 000157, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.0990} ,
+{'TRIAL' : 000158, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3236} ,
+{'TRIAL' : 000159, 'ARCHITECTURE' : '<class 'gat.GAT'>', 'F1-Score': 0.3689} ,
+{'TRIAL' : 000160, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.2504} ,
+{'TRIAL' : 000161, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.0904} ,
+{'TRIAL' : 000162, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 0.1598} ,
+{'TRIAL' : 000163, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3959} ,
+{'TRIAL' : 000164, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.2568} ,
+{'TRIAL' : 000165, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.4405} ,
+{'TRIAL' : 000166, 'ARCHITECTURE' : '<class 'pg_ggn.GGN'>', 'F1-Score': 0.3878} ,
+{'TRIAL' : 000167, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1429} ,
+{'TRIAL' : 000168, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000169, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1462} ,
+{'TRIAL' : 000170, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.0761} ,
+{'TRIAL' : 000171, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0776} ,
+{'TRIAL' : 000172, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000173, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.1901} ,
+{'TRIAL' : 000174, 'ARCHITECTURE' : '<class 'pg_gat.PGAT'>', 'F1-Score': 0.0791} ,
+{'TRIAL' : 000175, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.2195} ,
+{'TRIAL' : 000176, 'ARCHITECTURE' : '<class 'pg_arma.PARMA'>', 'F1-Score': 0.0916} ,
+{'TRIAL' : 000177, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1890} ,
+{'TRIAL' : 000178, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.0916} ,
+{'TRIAL' : 000179, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.4235} ,
+{'TRIAL' : 000180, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3104} ,
+{'TRIAL' : 000181, 'ARCHITECTURE' : '<class 'pg_graph_conv.PGraphConv'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000182, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.3103} ,
+{'TRIAL' : 000183, 'ARCHITECTURE' : '<class 'pg_chebyshev.PCheby'>', 'F1-Score': 0.2948} ,
+{'TRIAL' : 000184, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.1033} ,
+{'TRIAL' : 000185, 'ARCHITECTURE' : '<class 'pg_gcn.PGCN'>', 'F1-Score': 0.1012} ,
+{'TRIAL' : 000186, 'ARCHITECTURE' : '<class 'pg_rgcn_gat.PRGAT'>', 'F1-Score': 0.0993} ,
+{'TRIAL' : 000187, 'ARCHITECTURE' : '<class 'gcn.GCN'>', 'F1-Score': 0.3433} ,
+{'TRIAL' : 000188, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1145} ,
+{'TRIAL' : 000189, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.2405} ,
+{'TRIAL' : 000190, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.1021} ,
+{'TRIAL' : 000191, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.2213} ,
+{'TRIAL' : 000192, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 1.8813} ,
+{'TRIAL' : 000193, 'ARCHITECTURE' : '<class 'pg_sg.PSG'>', 'F1-Score': 0.0942} ,
+{'TRIAL' : 000194, 'ARCHITECTURE' : '<class 'pg_sage.PSAGE'>', 'F1-Score': 0.4919} ,
+{'TRIAL' : 000195, 'ARCHITECTURE' : '<class 'pg_rgcn.PRGCN'>', 'F1-Score': 0.4108} ,
+{'TRIAL' : 000196, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3192} ,
+{'TRIAL' : 000197, 'ARCHITECTURE' : '<class 'rgcn.RGCN'>', 'F1-Score': 0.3085} ,
+{'TRIAL' : 000198, 'ARCHITECTURE' : '<class 'pg_tag.PTAG'>', 'F1-Score': 0.0970} ,
+{'TRIAL' : 000199, 'ARCHITECTURE' : '<class 'pg_feast.PFeaSt'>', 'F1-Score': 0.1418}
 ```
