@@ -1,4 +1,4 @@
-## Adding various graph convolutional layers in origin SNGNN
+## Adding various graph convolutional layers in original SNGNN
 This repo serves as the task needed to be completed as part of GSOC proposal for RoboComp for the project 'Efficient acceptable social behaviour using machine learning techniques'
 
 The changes made are as follows : 
