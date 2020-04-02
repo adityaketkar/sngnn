@@ -3,6 +3,7 @@ This repo serves as the task needed to be completed as part of GSOC proposal for
 
 The changes made are as follows : 
  - Added basic implementation for layers - [ ChebyConv, SAGEConv, GraphConv, FeaStConv, TAGConv, SGConv, ARMAConv ]
+ - The layers are added for comparision purposes only and the performance here does not guarantee that a particular method is the best choice. We need to consider the fact that our task is inductive with varying graph structures, so all the spectral domain based methods are not of any use. The best Conv layers for the project should be associated with spatial domain, ex- GraphSAGE, GAT are two choices which stand out.
  - Ran a random search for the layers (as already implemented in train.py )
  
 ## Results
